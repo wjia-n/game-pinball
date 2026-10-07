@@ -1,0 +1,18 @@
+name: wajiha_game_core
+description: Shared engine for Wajiha's games - themes, shell, local multiplayer, cross-promo marketing and tip-jar IAP.
+version: 1.0.0
+
+environment:
+  sdk: ^3.4.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  shared_preferences: ^2.3.2
+  in_app_purchase: ^3.2.3
+  url_launcher: ^6.3.1
+  share_plus: ^10.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
