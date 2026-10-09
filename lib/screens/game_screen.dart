@@ -542,7 +542,7 @@ class _TableViewState extends State<_TableView> {
           borderRadius: BorderRadius.circular(10),
           child: CustomPaint(
             painter: _TablePainter(
-              engine: widget.engine,
+              e: widget.engine,
               theme: widget.theme,
               ball: widget.ball,
             ),
