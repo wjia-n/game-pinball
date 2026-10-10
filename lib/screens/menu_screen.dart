@@ -28,23 +28,16 @@ class _MenuScreenState extends State<MenuScreen> {
     super.initState();
     _store = PinballStore();
     _store.init();
-    _store.proPurchased.addListener(_onPro);
     widget.audio.startMenuMusic();
   }
 
   @override
   void dispose() {
-    _store.proPurchased.removeListener(_onPro);
     _store.dispose();
     super.dispose();
   }
 
-  void _onPro() {
-    if (_store.proPurchased.value) {
-      widget.settings.setPro(true);
-    }
-  }
-
+  
   /// Real in-app review flow: the Play in-app review sheet when available,
   /// otherwise fall back to opening the store listing. No fake dialogs.
   Future<void> _requestReview() async {

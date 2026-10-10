@@ -121,7 +121,7 @@ class PinballSettings extends ChangeNotifier {
   int bestTimeRush = 0;
   int gamesPlayed = 0;
   int tipsGiven = 0;
-  bool isPro = false;
+  bool isPro = true; // everything unlocked — no Pro version
 
   /// Builds the user-designed custom table theme from stored colors.
   PinballThemeDef get customTheme {
@@ -209,7 +209,7 @@ class PinballSettings extends ChangeNotifier {
     bestTimeRush = p.getInt(_kBestRush) ?? 0;
     gamesPlayed = p.getInt(_kGames) ?? 0;
     tipsGiven = p.getInt(_kTips) ?? 0;
-    isPro = p.getBool(_kIsPro) ?? false;
+    isPro = true; // everything unlocked
     _enforceFreeLimits(silent: true);
     notifyListeners();
   }
