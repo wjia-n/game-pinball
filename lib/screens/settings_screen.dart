@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/audio_service.dart';
 import '../services/settings_service.dart';
 import '../theme/pinball_themes.dart';
+import '../transfer/transfer_ui.dart';
 
 /// Settings: audio toggles + volume, renameable player profile, stats reset.
 class SettingsScreen extends StatefulWidget {
@@ -60,6 +61,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+              TransferSaveTile(gameSlug: 'pinball'),
           _section(t, 'PLAYER PROFILE'),
           const SizedBox(height: 8),
           TextField(
