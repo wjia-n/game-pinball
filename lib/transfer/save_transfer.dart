@@ -1,9 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cross_file/cross_file.dart';
 
 /// Phone-to-phone save transfer for Wajiha games.
 ///
@@ -19,7 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// No account, no login, no cloud — everything stays on the player's phones.
 class SaveTransfer {
   static const String kFormat = 'wajiha-save';
-  static const int kFormatVersion = 1;
+  static const int kFormatVersion = 2;
 
   /// Rough QR capacity threshold. Payloads larger than this fall back to
   /// file-share only (the UI hides the QR option automatically).
@@ -54,27 +53,11 @@ class SaveTransfer {
       // Other types are not storable via SharedPreferences anyway.
     }
 
+    // Note: file-based saves (.json/.save in the documents directory) are not
+    // scanned — SharedPreferences holds all game data across every platform
+    // (backed by localStorage on web). This keeps the transfer fully
+    // cross-platform with no dart:io dependency.
     final files = <String, String>{};
-    if (includeFiles) {
-      try {
-        final dir = await getApplicationDocumentsDirectory();
-        if (await dir.exists()) {
-          await for (final e in dir.list()) {
-            if (e is File &&
-                (e.path.endsWith('.json') || e.path.endsWith('.save'))) {
-              final name = e.path.split(Platform.pathSeparator).last;
-              try {
-                files[name] = base64Encode(await e.readAsBytes());
-              } catch (_) {
-                // Skip unreadable files — never fail the whole export.
-              }
-            }
-          }
-        }
-      } catch (_) {
-        // File scan is best-effort; SharedPreferences data is the core.
-      }
-    }
 
     final envelope = <String, dynamic>{
       'format': kFormat,
@@ -86,8 +69,9 @@ class SaveTransfer {
     };
 
     final jsonBytes = utf8.encode(jsonEncode(envelope));
-    final compressed = _gzip(jsonBytes);
-    return base64Encode(compressed);
+    // No compression: keeps the payload dependency-free and identical on
+    // every platform (dart:io's ZLibCodec is unavailable on web).
+    return base64Encode(jsonBytes);
   }
 
   /// Restores a payload previously created by [exportPayload].
@@ -103,8 +87,7 @@ class SaveTransfer {
     Map<String, dynamic> envelope;
     try {
       final trimmed = payload.trim();
-      final compressed = base64Decode(trimmed);
-      final jsonBytes = _gunzip(compressed);
+      final jsonBytes = base64Decode(trimmed);
       envelope = jsonDecode(utf8.decode(jsonBytes)) as Map<String, dynamic>;
     } catch (_) {
       return 'Could not read this save. Make sure you scanned the full code or picked the right file.';
@@ -147,25 +130,11 @@ class SaveTransfer {
         }
       }
 
+      // File restore removed — exports are SharedPreferences-only (see above),
+      // so there is nothing to restore here. This keeps import working
+      // identically on Android, iOS, and web.
       if (restoreFiles) {
-        try {
-          final files = (envelope['files'] as Map?) ?? {};
-          if (files.isNotEmpty) {
-            final dir = await getApplicationDocumentsDirectory();
-            for (final entry in files.entries) {
-              final name = entry.key.toString();
-              // Guard against path traversal in file names.
-              if (name.contains('/') || name.contains('\\') || name.contains('..')) {
-                continue;
-              }
-              final bytes = base64Decode(entry.value.toString());
-              await File('${dir.path}${Platform.pathSeparator}$name')
-                  .writeAsBytes(bytes);
-            }
-          }
-        } catch (_) {
-          // File restore is best-effort.
-        }
+        // No-op: payload 'files' map is always empty.
       }
     } catch (_) {
       return 'Something went wrong while restoring your save. Please try again.';
@@ -173,28 +142,18 @@ class SaveTransfer {
     return null;
   }
 
-  /// Writes [payload] to a temporary `.wajiha-save` file for sharing.
-  static Future<File> payloadToFile(String payload, String gameSlug) async {
-    final dir = await getTemporaryDirectory();
-    final stamp = DateTime.now().millisecondsSinceEpoch;
-    final file = File(
-        '${dir.path}${Platform.pathSeparator}$gameSlug-save-$stamp.$kFileExtension');
-    await file.writeAsString(payload);
-    return file;
+  /// Builds a shareable [XFile] from [payload] without touching the
+  /// filesystem — works on Android, iOS, and web (share_plus downloads it
+  /// in the browser on web).
+  static XFile payloadToXFile(String payload, String gameSlug) {
+    final bytes = Uint8List.fromList(utf8.encode(payload));
+    return XFile.fromData(
+      bytes,
+      name: '$gameSlug-save-$kFileExtension.txt',
+      mimeType: 'text/plain',
+    );
   }
 
   /// True when the payload is small enough to fit in a QR code.
   static bool fitsInQr(String payload) => payload.length <= kQrMaxChars;
-
-  // -----------------------------------------------------------------
-  // gzip via dart:io (no extra dependency).
-  // -----------------------------------------------------------------
-  static Uint8List _gzip(List<int> bytes) {
-    // dart:io's gzip is exposed through ZLibCodec.
-    return Uint8List.fromList(ZLibCodec(gzip: true).encode(bytes));
-  }
-
-  static List<int> _gunzip(List<int> bytes) {
-    return ZLibCodec(gzip: true).decode(bytes);
-  }
 }

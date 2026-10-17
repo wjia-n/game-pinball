@@ -1,4 +1,5 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -192,9 +193,11 @@ class _SendScreenState extends State<_SendScreen> {
     final payload = _payload;
     if (payload == null) return;
     try {
-      final file = await SaveTransfer.payloadToFile(payload, widget.gameSlug);
+      // XFile.fromData works on every platform — on web, share_plus
+      // downloads the file in the browser.
+      final xfile = SaveTransfer.payloadToXFile(payload, widget.gameSlug);
       await Share.shareXFiles(
-        [XFile(file.path)],
+        [xfile],
         text: 'My ${widget.gameSlug} game save — open it in the game on your new phone.',
       );
     } catch (_) {
@@ -369,17 +372,21 @@ class _ReceiveScreenState extends State<_ReceiveScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 12),
-              _ActionCard(
-                icon: Icons.qr_code_scanner_outlined,
-                title: 'Scan QR code',
-                subtitle: 'Point at the code shown on your old phone',
-                onTap: _busy ? () {} : _scanQr,
-              ),
-              const SizedBox(height: 16),
+              // QR scanning needs a camera — hidden on web where the
+              // scanner plugin is unreliable. File import works everywhere.
+              if (!kIsWeb) ...[
+                _ActionCard(
+                  icon: Icons.qr_code_scanner_outlined,
+                  title: 'Scan QR code',
+                  subtitle: 'Point at the code shown on your old phone',
+                  onTap: _busy ? () {} : _scanQr,
+                ),
+                const SizedBox(height: 16),
+              ],
               _ActionCard(
                 icon: Icons.file_open_outlined,
                 title: 'Open save file',
-                subtitle: 'Pick the .${SaveTransfer.kFileExtension} file you shared',
+                subtitle: 'Pick the ${SaveTransfer.kFileExtension} file you shared',
                 onTap: _busy ? () {} : _pickFile,
               ),
               if (_busy) ...[

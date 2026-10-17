@@ -17,7 +17,7 @@ class PinballStore {
   static const productIds = {coffeeId, chocolateId};
   ProductDetails? get proProduct => null; // Pro removed
 
-  final InAppPurchase _iap = InAppPurchase.instance;
+  InAppPurchase? _iap; // lazy: InAppPurchase has no web implementation
 
   bool available = false;
   bool storeReady = false; // true once real products are queryable
@@ -45,18 +45,25 @@ class PinballStore {
   Future<void> init() async {
     if (_initialized) return;
     _initialized = true;
+    // No store on web — skip billing entirely (UI shows fallback).
+    if (kIsWeb) {
+      available = false;
+      error = 'Tips unavailable on web';
+      return;
+    }
+    _iap = InAppPurchase.instance;
     try {
-      available = await _iap.isAvailable();
+      available = await _iap!.isAvailable();
       if (!available) {
         error = 'Store unavailable on this device';
         return;
       }
-      _sub = _iap.purchaseStream.listen(
+      _sub = _iap!.purchaseStream.listen(
         _onPurchases,
         onError: (_) {},
         cancelOnError: false,
       );
-      final resp = await _iap.queryProductDetails(productIds);
+      final resp = await _iap!.queryProductDetails(productIds);
       if (resp.error != null) {
         error = 'Could not reach the store';
         return;
@@ -93,7 +100,7 @@ class PinballStore {
         purchaseInProgress.value = false;
       }
       if (p.pendingCompletePurchase) {
-        _iap.completePurchase(p).catchError((_) {});
+        _iap!.completePurchase(p).catchError((_) {});
       }
     }
   }
@@ -107,7 +114,7 @@ class PinballStore {
     purchaseError.value = null;
     purchaseInProgress.value = true;
     try {
-      await _iap.buyConsumable(
+      await _iap!.buyConsumable(
         purchaseParam: PurchaseParam(productDetails: product),
       );
     } catch (_) {
@@ -121,7 +128,7 @@ class PinballStore {
   Future<void> restore() async {
     purchaseError.value = null;
     try {
-      await _iap.restorePurchases();
+      await _iap!.restorePurchases();
     } catch (_) {
       purchaseError.value = 'Restore failed — please try again.';
     }
