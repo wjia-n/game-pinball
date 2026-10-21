@@ -71,3 +71,16 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+// 16 KB page-size compliance (Play Console error): replicate the
+// mobile_scanner 6.0.11 dependency set. barcode-scanning 17.3.0 alone is NOT
+// enough (libimage_processing_util_jni.so stays 4 KB); CameraX 1.5.0 is required.
+configurations.all {
+    resolutionStrategy {
+        force("com.google.mlkit:barcode-scanning:17.3.0")
+        force("com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.1")
+        force("androidx.camera:camera-core:1.5.0")
+        force("androidx.camera:camera-lifecycle:1.5.0")
+        force("androidx.camera:camera-camera2:1.5.0")
+    }
+}
