@@ -174,7 +174,9 @@ class _MenuScreenState extends State<MenuScreen> {
                       'Infinite balls · marathon', s),
                   const SizedBox(width: 10),
                   _modeCard(t, PinballMode.timeRush, 'Time Rush',
-                      s.isPro ? '3 minutes · pure rush' : 'PRO only',
+                      defaultTargetPlatform == TargetPlatform.iOS
+                          ? (s.isPro ? '3 minutes · pure rush' : 'Locked')
+                          : (s.isPro ? '3 minutes · pure rush' : 'PRO only'),
                       s,
                       locked: !s.isPro),
                 ],
@@ -191,7 +193,10 @@ class _MenuScreenState extends State<MenuScreen> {
                       'Classic arcade pace', s),
                   const SizedBox(width: 10),
                   _diffCard(t, PinballDifficulty.lightning, 'Lightning',
-                      s.isPro ? 'Fast ball, twitchy tilt' : 'PRO only', s,
+                      defaultTargetPlatform == TargetPlatform.iOS
+                          ? (s.isPro ? 'Fast ball, twitchy tilt' : 'Locked')
+                          : (s.isPro ? 'Fast ball, twitchy tilt' : 'PRO only'),
+                      s,
                       locked: !s.isPro),
                 ],
               ),
