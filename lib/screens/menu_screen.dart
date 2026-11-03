@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:share_plus/share_plus.dart';
@@ -254,7 +255,7 @@ class _MenuScreenState extends State<MenuScreen> {
                       icon: Icon(s.isPro
                           ? Icons.workspace_premium
                           : Icons.lock_outline),
-                      label: Text(s.isPro ? 'PRO active' : 'Go PRO'),
+                      label: Text(defaultTargetPlatform == TargetPlatform.iOS ? '⭐ Gold Star' : (s.isPro ? 'PRO active' : 'Go PRO')),
                       onPressed: () {
                         widget.audio.click();
                         Navigator.of(context).push(MaterialPageRoute(
